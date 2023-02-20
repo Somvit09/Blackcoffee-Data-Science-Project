@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import bs4
+import re
 
 
 def get_title_and_article_text():
@@ -117,9 +118,70 @@ def negative_words_identification():
         return negative_word_score
 
 
+def calculate_polarity_score():
+    positive_scores = positive_words_identification()
+    negative_scores = negative_words_identification()
+    polarity_scores = []
+    for i in range(len(positive_scores)):
+        polarity_score = (positive_scores[i] - negative_scores[i]) / (
+                    (positive_scores[i] + negative_scores[i]) + 0.000001)
+        polarity_scores.append(polarity_score)
+    return polarity_scores
 
 
+def calculate_subjectivity_score():
+    all_articles = cleanStopWordsInLinks()
+    positive_scores = positive_words_identification()
+    negative_scores = negative_words_identification()
+    total_words_after_cleaning = []
+    for i in range(len(all_articles)):
+        total_words = len(all_articles[i].split(' '))
+        after_cleaning_word_count = total_words - (positive_scores[i] + negative_scores[i])
+        total_words_after_cleaning.append(after_cleaning_word_count)
+    subjectivity_scores = []
+    for i in range(len(all_articles)):
+        subjectivity_score = (positive_scores[i] + negative_scores[i]) / (total_words_after_cleaning[i] + 0.000001)
+        subjectivity_scores.append(subjectivity_score)
+    print(subjectivity_scores)
+    return subjectivity_scores
 
 
-negative_words_identification()
+def count_complex_words(sentence):
+    # Define a regular expression that matches vowel groups
+    vowel_pattern = re.compile(r'[aeiouy]+', re.IGNORECASE)
 
+    # Split the sentence into individual words
+    words = sentence.split()
+
+    # Count the number of complex words
+    complex_word_count = 0
+    for word in words:
+        # Count the number of vowel groups in the word
+        syllable_count = len(vowel_pattern.findall(word))
+
+        # If the word has two or more syllables, count it as complex
+        if syllable_count >= 2:
+            complex_word_count += 1
+
+    return complex_word_count
+
+
+def analysis_of_readability():
+    all_articles = cleanStopWordsInLinks()
+    average_sentence_length = []
+    percentage_of_complex_words = []
+    fog_index = []
+    for i in range(len(all_articles)):
+        no_of_words = len(all_articles[i].split(' '))
+        no_of_sentences = len(all_articles[i].split('. '))
+        complex_words = count_complex_words(all_articles[i])
+        average_length_of_sentence = (no_of_words/no_of_sentences)
+        complex_words_percentage = (complex_words/no_of_words)
+        fog = (0.4 * (average_length_of_sentence + complex_words_percentage))
+        average_sentence_length.append(average_length_of_sentence)
+        percentage_of_complex_words.append(complex_words_percentage)
+        fog_index.append(fog)
+    print(len(average_sentence_length), len(percentage_of_complex_words), len(fog_index))
+    return average_sentence_length, percentage_of_complex_words, fog_index
+
+analysis_of_readability()
