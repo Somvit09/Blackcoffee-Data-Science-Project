@@ -6,11 +6,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 
-driver_path = Service('chromedriver_linux64/chromedriver')
-driver = webdriver.Chrome(service=driver_path)
 
-
-def get_title_and_article_text():  # by using beautifulsoup
+def get_title_and_article_text():
     read_xl = pd.read_excel('Input.xlsx')
     data = {}
     url_id = 37
@@ -27,8 +24,7 @@ def get_title_and_article_text():  # by using beautifulsoup
             urls.append(url_id)
             url_id += 1
         else:
-            url_id -= 1
-        print(len(all_links), len(urls), url_id, len(data))
+            print(f"Could not extract data from {i}")
     return data, all_links, urls
 
 
@@ -38,6 +34,8 @@ def get_title_and_article_text_by_selenium():  # by using selenium webdriver
     url_id = 37
     all_links = []
     urls = []
+    driver_path = Service('chromedriver_linux64/chromedriver')
+    driver = webdriver.Chrome(service=driver_path)
     for i in read_xl['URL']:
         driver.get(i)
         if driver.find_element(By.CLASS_NAME, 'entry-title') is not None and driver.find_element(By.CLASS_NAME, 'td-post-content') is not None:
@@ -49,7 +47,7 @@ def get_title_and_article_text_by_selenium():  # by using selenium webdriver
             url_id += 1
         else:
             url_id -= 1
-        print(len(all_links), len(urls), url_id, len(data))
+            print(f"Could not extract data from {i}")
         driver.quit()
     return data, all_links, urls
 
@@ -178,7 +176,6 @@ def calculate_subjectivity_score():
     for i in range(len(all_articles)):
         subjectivity_score = (positive_scores[i] + negative_scores[i]) / (total_words_after_cleaning[i] + 0.000001)
         subjectivity_scores.append(subjectivity_score)
-    print(subjectivity_scores)
     return subjectivity_scores
 
 
@@ -230,8 +227,8 @@ def get_all_data_and_convert_it_into_excel_file():
     average_sentence_list, percentage_list, fog_list = analysis_of_readability()
 
     # creating data
-    data['URL_ID'] = urls
-    data['URL'] = all_links
+    data['URL_ID'] = urls[0:99]
+    data['URL'] = all_links[0:99]
     data['POSITIVE SCORE'] = positive_list
     data['NEGATIVE SCORE'] = negative_list
     data['POLARITY SCORE'] = polarity_list
@@ -239,8 +236,6 @@ def get_all_data_and_convert_it_into_excel_file():
     data['AVG SENTENCE LENGTH'] = average_sentence_list
     data['PERCENTAGE OF COMPLEX WORDS'] = percentage_list
     data['FOG INDEX'] = fog_list
-    print(len(all_links), len(urls), len(positive_list), len(negative_list), len(polarity_list), len(subjective_list),
-          len(average_sentence_list), len(percentage_list), len(fog_list))
     # create a Pandas dataframe from the list
     df = pd.DataFrame(data, columns=['URL_ID', 'URL', 'POSITIVE SCORE', 'NEGATIVE SCORE', 'POLARITY SCORE',
                                      'SUBJECTIVITY SCORE', 'AVG SENTENCE LENGTH', 'PERCENTAGE OF COMPLEX WORDS',
@@ -253,9 +248,7 @@ def get_all_data_and_convert_it_into_excel_file():
     df.to_excel(writer, sheet_name='Sheet1', index=False)
 
     # save the Excel file
-    writer.save()
     writer.close()
 
 
-# get_all_data_and_convert_it_into_excel_file()
-get_title_and_article_text()
+get_all_data_and_convert_it_into_excel_file()
